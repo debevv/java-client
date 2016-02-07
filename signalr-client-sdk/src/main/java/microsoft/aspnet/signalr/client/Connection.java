@@ -846,4 +846,9 @@ public class Connection implements ConnectionBase {
             }
         }
     }
+	
+	public Class getTransportClass() {
+        if(mTransport == null) return null;
+        return mTransport.getClass();
+	}
 }
