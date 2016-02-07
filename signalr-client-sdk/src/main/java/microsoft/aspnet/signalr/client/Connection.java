@@ -327,9 +327,22 @@ public class Connection implements ConnectionBase {
             }
         });
     }
-
-    @Override
+	
+	@Override
     public SignalRFuture<Void> start(final ClientTransport transport) {
+		return start(transport, 0);
+	}
+
+	/**
+     * Starts the connection
+     * 
+     * @param transport
+     *            Transport to be used by the connection
+	 * @param keepAliveTimeout
+	 *            Overrides server's keepAliveTimeout (used primarily to change long polling rate)
+     * @return Future for the operation
+     */
+    public SignalRFuture<Void> start(final ClientTransport transport, final int keepAliveTimeout) {
         synchronized (mStartLock) {
             log("Entered startLock in start", LogLevel.Verbose);
             if (!changeState(ConnectionState.Disconnected, ConnectionState.Connecting)) {
@@ -365,10 +378,14 @@ public class Connection implements ConnectionBase {
                         log("ConnectionToken: " + mConnectionToken, LogLevel.Verbose);
 
                         KeepAliveData keepAliveData = null;
-                        if (negotiationResponse.getKeepAliveTimeout() > 0) {
-                            log("Keep alive timeout: " + negotiationResponse.getKeepAliveTimeout(), LogLevel.Verbose);
-                            keepAliveData = new KeepAliveData((long) (negotiationResponse.getKeepAliveTimeout() * 1000));
-                        }
+                        if (keepAliveTimeout > 0) {
+							log("Keep alive timeout: " + keepAliveTimeout, LogLevel.Verbose);
+							keepAliveData = new KeepAliveData((long) keepAliveTimeout);
+						}
+						else if (negotiationResponse.getKeepAliveTimeout() > 0) {
+							log("Keep alive timeout: " + negotiationResponse.getKeepAliveTimeout(), LogLevel.Verbose);
+							keepAliveData = new KeepAliveData((long) (negotiationResponse.getKeepAliveTimeout() * 1000));
+						}
 
                         startTransport(keepAliveData, false);
                     }
