@@ -13,6 +13,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+
 import microsoft.aspnet.signalr.client.LogLevel;
 import microsoft.aspnet.signalr.client.Logger;
 import microsoft.aspnet.signalr.client.http.HttpConnectionFuture;
@@ -123,8 +127,25 @@ class NetworkRunnable implements Runnable {
      */
     static HttpURLConnection createHttpURLConnection(Request request) throws IOException {
         URL url = new URL(request.getUrl());
-        
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        HttpURLConnection connection;
+
+        /* NOTICE This is a serious security hole for an https connection. In our case is
+					almost acceptable because usually the user server will be in-house. Still we
+					are not protected from MITM attacks */
+        if (request.getUrl().substring(0, 5).equals("https")) {
+            HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+            connection = (HttpsURLConnection) url.openConnection();
+            ((HttpsURLConnection)connection).setHostnameVerifier(hostnameVerifier);
+        }
+        else
+            connection = (HttpURLConnection) url.openConnection();
+
+        //HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setConnectTimeout(15 * 1000);
         connection.setRequestMethod(request.getVerb());
 
